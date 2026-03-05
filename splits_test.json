@@ -1,0 +1,12 @@
+{
+  "split_mode": "subject",
+  "data_root": "..\\test",
+  "seed": 42,
+  "val_frac": 0.15,
+  "train_subjects": [],
+  "val_subjects": [],
+  "test_subjects": [
+    "."
+  ],
+  "num_subjects": 1
+}

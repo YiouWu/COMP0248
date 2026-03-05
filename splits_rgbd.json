@@ -1,0 +1,41 @@
+{
+  "split_mode": "subject",
+  "data_root": "..\\collated_dataset\\RGB_depth_annotations",
+  "seed": 42,
+  "val_frac": 0.15,
+  "train_subjects": [
+    "Ali Shihab_8077769_assignsubmission_file_18006111_Shihab",
+    "Amir Gerges_8077757_assignsubmission_file_22059968_Gerges/22059968_Gerges",
+    "Baochen Zhen_8077751_assignsubmission_file_25050766_Zhen/25050766_Zhen",
+    "Bingqian Guo_8077750_assignsubmission_file_25040826_Guo/25040826_Guo",
+    "Bojun Long_8077758_assignsubmission_file_25036898_Long/25036898_bojun",
+    "Bruce Jiang_8077752_assignsubmission_file_23064347_Jiang/23064347_Jiang",
+    "Cristhian Daniel Poveda Bravo_8077749_assignsubmission_file_25128955_Poveda/COMP0248_Poveda",
+    "Fengyao Zhang_8077763_assignsubmission_file_25081046_Zhang/25081046_Zhang",
+    "Hoi Ki Lui_8077743_assignsubmission_file_25207564_Lui/25207564_Lui",
+    "Jiadong Yu_8077753_assignsubmission_file_25073993_Yu/25073993_Yu",
+    "Johnny Weng_8077759_assignsubmission_file_20077685_Weng/20077685_Weng",
+    "Karl Man_8077767_assignsubmission_file_25067520_Man/25067520_Man",
+    "Lexuan Wang_8077746_assignsubmission_file_25058518_Wang/25058518_Wang",
+    "Manuel De Castro Ribeiro Jardim_8077747_assignsubmission_file_25206958_de_Castro_Ribeiro_Jardim/COMP0248_Manuel de Castro Ribeiro Jardim",
+    "Ogulcan Gurelli_8077771_assignsubmission_file_25182471_Gurelli/25182471_Gurelli",
+    "Pablo Islas_8077777_assignsubmission_file_25047620_Islas/25047620_Islas",
+    "Qi Cheng_8077766_assignsubmission_file_25055639_CHENG/25055639_CHENG",
+    "Tom Houghton_8077764_assignsubmission_file_25077339_Houghton/25077339_Houghton",
+    "Xi Nan_8077748_assignsubmission_file_25194692_XiNan/25194692_XiNan",
+    "Xiangjin Kong_8077742_assignsubmission_file_25042819_Kong/25042819_Kong",
+    "Xinyan Guan_8077775_assignsubmission_file_25150455_Guan/25150455_Guan",
+    "Yifan Shao_8077772_assignsubmission_file_25128153_Shao/25128153_Shao",
+    "Yiou Wu_8077741_assignsubmission_file_25047621_Wu/25047621_Wu",
+    "Yuxin Liu_8077770_assignsubmission_file_23047126_Liu/23047126_Liu",
+    "Zhenhao Guo_8077765_assignsubmission_file_25036894_Guo/25036894_Guo",
+    "Zimo Chen_8077776_assignsubmission_file_25120750_Chen/25120750_Chen"
+  ],
+  "val_subjects": [
+    "Jiali Yi_8077756_assignsubmission_file_25067254_Yi/25067254_Yi",
+    "Logic He_8077754_assignsubmission_file_25045993_He/25045993_He",
+    "Tianhao Liang_8077768_assignsubmission_file_25100812_Liang/25100812_Liang",
+    "Yuanhao Jin_8077761_assignsubmission_file_25115816_Jin/25115816_Jin"
+  ],
+  "num_subjects": 30
+}
