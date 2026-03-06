@@ -16,12 +16,14 @@ It supports:
 ## 1. Environment (Linux + GPU)
 
 ### 1.1 Check GPU
+
 ```bash
 nvidia-smi
 python -c "import torch; print('cuda:', torch.cuda.is_available()); print(torch.cuda.get_device_name(0) if torch.cuda.is_available() else None)"
 ```
 
 ### 1.2 Create a conda environment
+
 ```bash
 conda create -n comp0248 python=3.10 -y
 conda activate comp0248
@@ -29,187 +31,153 @@ conda activate comp0248
 
 ### 1.3 Install dependencies
 
-Install PyTorch that matches the CUDA version on the remote GPU machine.
+Install a CUDA-enabled PyTorch build that matches your machine, then common packages:
 
-Example for CUDA 12.1 wheels:
 ```bash
 pip install --upgrade pip
-pip install torch torchvision --index-url https://download.pytorch.org/whl/cu121
-``` 
-Other packages:
-
-```bash
+pip install torch torchvision torchaudio
 pip install numpy pillow matplotlib scikit-learn tqdm
 ```
-## 2. Data layout
 
-The dataset is not included in the repository.
+---
 
-### 2.1 Collated RGB-D dataset
+## 2. Data
 
-Expected structure:
+Expected collated dataset layout:
 
-collated_dataset/
-  RGB_depth_annotations/
-    SubjectA/
-      G01_call/clip01/{rgb,depth,annotation}/frame_*.png
-      ...
-    SubjectB/
-      ...
-2.2 Independent test set
+```
+collated_dataset/RGB_depth_annotations/
+  <subject_name_or_id>/
+    G01_call/clip01/{rgb,depth,depth_raw,annotation}/...
+    ...
+```
 
-A common structure is:
+Depth frames are read from `depth/` (PNG). Masks are read from `annotation/` (PNG) for keyframes only.
 
+---
+
+## 3. Create train/val split (subject-level)
+
+From the repository root:
+
+```bash
+python -m src.make_split --data_root "..collated_dataset/RGB_depth_annotations" --out "splits_rgbd.json" --val_frac 0.15 --seed 42
+```
+
+---
+
+## 4. Train (early stopping)
+
+Early stopping monitors a composite validation score:
+
+(score) = (seg_dice + det_acc@0.5 + cls_acc) / 3
+
+### 4.1 Baseline
+
+```bash
+python -m src.train --data_root "..collated_dataset/RGB_depth_annotations" --split_json "splits_rgbd.json" --variant baseline --out_dir "results_baseline" --weights_dir "weights_baseline" --epochs 100 --patience 8 --min_delta 0.002 --batch_size 16 --num_workers 2 --lr 0.001 --weight_decay 0.0001 --target_size 256 --device cuda
+```
+
+### 4.2 Innovation
+
+```bash
+python -m src.train --data_root "..collated_dataset/RGB_depth_annotations" --split_json "splits_rgbd.json" --variant innovation --out_dir "results_innovation" --weights_dir "weights_innovation" --epochs 100 --patience 8 --min_delta 0.002 --batch_size 16 --num_workers 2 --lr 0.001 --weight_decay 0.0001 --target_size 256 --device cuda
+```
+
+Outputs:
+- `weights_*/best.pt`, `weights_*/last.pt`
+- `results_*/log.csv`
+
+---
+
+## 5. Evaluate (val)
+
+### 5.1 Baseline (val)
+
+```bash
+python -m src.evaluate --data_root "..collated_dataset/RGB_depth_annotations" --split_json "splits_rgbd.json" --variant baseline --weights "weights_baseline/best.pt" --split val --batch_size 16 --num_workers 2 --target_size 256 --device cuda --out_dir "results_baseline"
+```
+
+### 5.2 Innovation (val)
+
+```bash
+python -m src.evaluate --data_root "..collated_dataset/RGB_depth_annotations" --split_json "splits_rgbd.json" --variant innovation --weights "weights_innovation/best.pt" --split val --batch_size 16 --num_workers 2 --target_size 256 --device cuda --out_dir "results_innovation"
+```
+
+Outputs:
+- `results_*/metrics_val.json`
+
+---
+
+## 6. Independent test set (test-only split)
+
+If you have an independent test directory structured as:
+
+```
 test/
   G01_call/clip*/...
-  G02_dislike/clip*/...
   ...
-3. Train and evaluate (Baseline)
+```
 
-Run the following commands from the repository root.
+Create a test-only split file:
 
-3.1 Create a subject split (train and val)
-python -m src.make_split \
-  --data_root "../collated_dataset/RGB_depth_annotations" \
-  --out "splits_rgbd.json" \
-  --val_frac 0.15 \
-  --seed 42
-3.2 Train baseline (early stopping)
-python -m src.train \
-  --data_root "../collated_dataset/RGB_depth_annotations" \
-  --split_json "splits_rgbd.json" \
-  --variant baseline \
-  --out_dir "results_baseline" \
-  --weights_dir "weights_baseline" \
-  --epochs 100 \
-  --patience 8 \
-  --min_delta 0.002 \
-  --batch_size 16 \
-  --num_workers 2 \
-  --lr 0.001 \
-  --weight_decay 0.0001 \
-  --target_size 256 \
-  --device cuda
-3.3 Evaluate baseline (val)
-python -m src.evaluate \
-  --data_root "../collated_dataset/RGB_depth_annotations" \
-  --split_json "splits_rgbd.json" \
-  --variant baseline \
-  --weights "weights_baseline/best.pt" \
-  --split val \
-  --batch_size 16 \
-  --num_workers 2 \
-  --target_size 256 \
-  --device cuda \
-  --out_dir "results_baseline"
-3.4 Visualise baseline (val)
-python -m src.visualise \
-  --data_root "../collated_dataset/RGB_depth_annotations" \
-  --split_json "splits_rgbd.json" \
-  --variant baseline \
-  --weights "weights_baseline/best.pt" \
-  --split val \
-  --out_dir "results_baseline" \
-  --num_samples 24 \
-  --batch_size 16 \
-  --num_workers 2 \
-  --target_size 256 \
-  --device cuda \
-  --plot_curves
-4. Train and evaluate (Innovation)
+```bash
+python -m src.make_split --data_root "test" --out "splits_test.json" --test_only
+```
 
-Select the innovation by setting --variant innovation.
+Then evaluate:
 
-4.1 Train innovation
-python -m src.train \
-  --data_root "../collated_dataset/RGB_depth_annotations" \
-  --split_json "splits_rgbd.json" \
-  --variant innovation \
-  --out_dir "results_innovation" \
-  --weights_dir "weights_innovation" \
-  --epochs 100 \
-  --patience 8 \
-  --min_delta 0.002 \
-  --batch_size 16 \
-  --num_workers 2 \
-  --lr 0.001 \
-  --weight_decay 0.0001 \
-  --target_size 256 \
-  --device cuda
-4.2 Evaluate innovation (val)
-python -m src.evaluate \
-  --data_root "../collated_dataset/RGB_depth_annotations" \
-  --split_json "splits_rgbd.json" \
-  --variant innovation \
-  --weights "weights_innovation/best.pt" \
-  --split val \
-  --batch_size 16 \
-  --num_workers 2 \
-  --target_size 256 \
-  --device cuda \
-  --out_dir "results_innovation"
-4.3 Visualise innovation (val)
-python -m src.visualise \
-  --data_root "../collated_dataset/RGB_depth_annotations" \
-  --split_json "splits_rgbd.json" \
-  --variant innovation \
-  --weights "weights_innovation/best.pt" \
-  --split val \
-  --out_dir "results_innovation" \
-  --num_samples 24 \
-  --batch_size 16 \
-  --num_workers 2 \
-  --target_size 256 \
-  --device cuda \
-  --plot_curves
-5. Independent test set
-5.1 Create a test-only split file
-python -m src.make_split \
-  --data_root "../test" \
-  --out "splits_test.json" \
-  --test_only
-5.2 Evaluate on test
+### 6.1 Baseline (test)
+
+```bash
+python -m src.evaluate --data_root "test" --split_json "splits_test.json" --variant baseline --weights "weights_baseline/best.pt" --split test --batch_size 16 --num_workers 2 --target_size 256 --device cuda --out_dir "results_baseline"
+```
+
+### 6.2 Innovation (test)
+
+```bash
+python -m src.evaluate --data_root "test" --split_json "splits_test.json" --variant innovation --weights "weights_innovation/best.pt" --split test --batch_size 16 --num_workers 2 --target_size 256 --device cuda --out_dir "results_innovation"
+```
+
+Outputs:
+- `results_*/metrics_test.json`
+
+---
+
+## 7. Visualisation
+
+This script saves overlays (RGB, depth, GT overlay, prediction overlay), confusion matrices, and optional curves.
+
+### 7.1 Validation visualisation
 
 Baseline:
 
-python -m src.evaluate \
-  --data_root "../test" \
-  --split_json "splits_test.json" \
-  --variant baseline \
-  --weights "weights_baseline/best.pt" \
-  --split test \
-  --batch_size 16 \
-  --num_workers 2 \
-  --target_size 256 \
-  --device cuda \
-  --out_dir "results_baseline"
+```bash
+python -m src.visualise --data_root "..collated_dataset/RGB_depth_annotations" --split_json "splits_rgbd.json" --variant baseline --weights "weights_baseline/best.pt" --split val --out_dir "results_baseline" --num_samples 24 --batch_size 16 --num_workers 2 --target_size 256 --device cuda --plot_curves
+```
 
 Innovation:
 
-python -m src.evaluate \
-  --data_root "../test" \
-  --split_json "splits_test.json" \
-  --variant innovation \
-  --weights "weights_innovation/best.pt" \
-  --split test \
-  --batch_size 16 \
-  --num_workers 2 \
-  --target_size 256 \
-  --device cuda \
-  --out_dir "results_innovation"
-5.3 Visualise on test
+```bash
+python -m src.visualise --data_root "..collated_dataset/RGB_depth_annotations" --split_json "splits_rgbd.json" --variant innovation --weights "weights_innovation/best.pt" --split val --out_dir "results_innovation" --num_samples 24 --batch_size 16 --num_workers 2 --target_size 256 --device cuda --plot_curves
+```
 
-Innovation:
+### 7.2 Test visualisation (innovation)
 
-python -m src.visualise \
-  --data_root "../test" \
-  --split_json "splits_test.json" \
-  --variant innovation \
-  --weights "weights_innovation/best.pt" \
-  --split test \
-  --out_dir "results_innovation" \
-  --num_samples 24 \
-  --batch_size 16 \
-  --num_workers 2 \
-  --target_size 256 \
-  --device cuda
+```bash
+python -m src.visualise --data_root "test" --split_json "splits_test.json" --variant innovation --weights "weights_innovation/best.pt" --split test --out_dir "results_innovation" --num_samples 24 --batch_size 16 --num_workers 2 --target_size 256 --device cuda
+```
+
+Outputs:
+- `results_*/visuals/<split>/overlay_<split>_*.png`
+- `results_*/confusion_<split>.png`
+- `results_*/curves.png` (when `--plot_curves` is set)
+
+---
+
+
+## Notes
+
+- All experiments are reproduced on **Linux + GPU**.
+- For a fair comparison, baseline and innovation use the same split file, preprocessing, optimiser settings, and early stopping rule.
+- If dataloading is slow, try `--num_workers 0` or reduce `--batch_size`.
